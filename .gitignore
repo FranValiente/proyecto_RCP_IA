@@ -1,0 +1,5 @@
+# ignore virtual environment
+.venv/
+
+# don´t push the videos to the repository
+data/
