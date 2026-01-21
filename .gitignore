@@ -1,5 +1,12 @@
 # ignore virtual environment
 .venv/
 
+# yolo run tests
+runs/
+
 # don´t push the videos to the repository
 data/
+
+# don´t push models weights to the repository (this are automatically downloaded to the project when using YOLO)
+yolo26n-pose.pt
+yolo26n.pt
