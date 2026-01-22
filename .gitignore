@@ -8,5 +8,4 @@ runs/
 data/
 
 # don´t push models weights to the repository (this are automatically downloaded to the project when using YOLO)
-yolo26n-pose.pt
-yolo26n.pt
+yolo_models/
