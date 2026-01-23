@@ -1,0 +1,22 @@
+tracker_type: botsort
+
+# Asociación
+track_high_thresh: 0.3      # bajar un poco (por defecto ~0.25–0.5) para asociar más detecciones[web:17][web:20]
+track_low_thresh: 0.05      # más bajo para la segunda pasada, permite recuperar tracks con menos confianza[web:18]
+new_track_thresh: 0.4       # algo más alto para no crear IDs nuevos tan fácilmente[web:20]
+match_thresh: 0.7           # no muy estricto; si lo pones muy alto, se rompen tracks[web:29]
+fuse_score: true
+
+# Persistencia de IDs
+track_buffer: 60            # más frames “vivo” cuando se pierde la persona (2 s a 30 fps)[web:20]
+
+# Movimiento global (cámara casi fija)
+gmc_method: None            # si la cámara no se mueve, mejor desactivar GMC para evitar ruido[web:20][web:21]
+
+# ReID (todavía limitado)
+proximity_thresh: 0.5       # mantener por defecto[web:20]
+appearance_thresh: 0.25     # mantener por defecto[web:20]
+with_reid: False            # en Ultralytics actual la parte de ReID es muy limitada[web:29][web:30]
+
+# Modelo ReID (si en el futuro lo activas)
+model: auto
