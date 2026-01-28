@@ -7,7 +7,7 @@ runs/
 # don´t push the videos to the repository
 data/
 
-C:\Users\SimIA\Documents\proyecto_RCP_IA\src\weights\YOLO26_finetuned_4_8.pt
+src/weights/
 
 # don´t push models weights to the repository (this are automatically downloaded to the project when using YOLO)
 yolo26l-pose.pt
