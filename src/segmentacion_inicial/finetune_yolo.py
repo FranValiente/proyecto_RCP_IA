@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     # Finetuning
     results = model.train(
-        data=r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\segmentaciones_videos_4_8\data.yaml",
+        data=r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\segmentaciones_videos_4_8_13\data.yaml",
         epochs=100,
         device = 0,
         imgsz=640,
