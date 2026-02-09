@@ -3,12 +3,12 @@ import shutil
 from pathlib import Path
 
 # --- Configuración ---
-parent_dir = Path(r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\segmentaciones_videos_4_8_13")  # <-- carpeta padre
+parent_dir = Path(r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\finetuning_datasets\segmentaciones_videos_1_5_11")  # <-- carpeta padre
 images_dir = parent_dir / "images"
 labels_dir = parent_dir / "labels"
 
 train_ratio = 0.80
-seed = 230  # cambia si quieres otro split reproducible [web:18]
+seed = 230
 move_files = True  # True = mover, False = copiar
 
 # extensiones de imagen aceptadas
