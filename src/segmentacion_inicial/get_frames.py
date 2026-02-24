@@ -4,18 +4,18 @@ import shutil
 # ffmpeg -i input.mp4 nombre_carpeta/frame_%06d.png
 
 # --- Configuración ---
-labels_dir = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\finetuning_datasets\segmentaciones_videos_1_5_11\labels\train"
-output_images = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\finetuning_datasets\segmentaciones_videos_1_5_11\images\train"
+labels_dir = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\finetuning_datasets\segmentaciones_videos_3_6_7\labels\train"
+output_images = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\finetuning_datasets\segmentaciones_videos_3_6_7\images\train"
 
-frames_video1 = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_11"
-frames_video2 = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_1"
-frames_video3 = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_5"  # <-- ajusta
+frames_video1 = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_6"
+frames_video2 = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_7"
+frames_video3 = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_3"  # <-- ajusta
 
 # Rangos globales (incluyentes) + carpeta de frames correspondiente
 VIDEOS = [
-    {"name": "v1", "global_start": 0,    "global_end": 1669, "frames_dir": frames_video1},
-    {"name": "v2", "global_start": 1670, "global_end": 6983, "frames_dir": frames_video2},
-    {"name": "v3", "global_start": 6984, "global_end": 10713, "frames_dir": frames_video3},
+    {"name": "v1", "global_start": 0,    "global_end": 3756, "frames_dir": frames_video1},
+    {"name": "v2", "global_start": 3757, "global_end": 8198, "frames_dir": frames_video2},
+    {"name": "v3", "global_start": 8199, "global_end": 14679, "frames_dir": frames_video3},
 ]
 
 IMG_EXT = ".png"

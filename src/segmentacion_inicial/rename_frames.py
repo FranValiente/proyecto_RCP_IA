@@ -25,5 +25,5 @@ def renombrar_frames(directorio):
             print(f"Renombrado: {nombre_archivo} -> {nuevo_nombre}")
 
 # Uso del script
-ruta_carpeta = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_11"
+ruta_carpeta = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\frames_7"
 renombrar_frames(ruta_carpeta)

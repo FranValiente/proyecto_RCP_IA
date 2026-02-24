@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 # --- Configuración ---
-parent_dir = Path(r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\finetuning_datasets\segmentaciones_videos_1_5_11")  # <-- carpeta padre
+parent_dir = Path(r"C:\Users\SimIA\Documents\proyecto_RCP_IA\data\finetuning_datasets\segmentaciones_videos_3_6_7")  # <-- carpeta padre
 images_dir = parent_dir / "images"
 labels_dir = parent_dir / "labels"
 
