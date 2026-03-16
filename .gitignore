@@ -11,3 +11,7 @@ src/weights/*.pt
 
 # don´t push models weights to the repository (this are automatically downloaded to the project when using YOLO)
 *.pt
+
+notebooks/pruebas.ipynb
+
+src/metricas/predicciones_videos/

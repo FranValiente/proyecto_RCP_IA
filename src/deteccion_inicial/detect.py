@@ -14,5 +14,5 @@ results = model.predict(source=path,
                         save=True,
                         batch=8,
                         classes=[0,1,2,3,4,5,6,7], # roles
-                        max_det=8,
-                        verbose=False) # pacient, 5 roles, UCI, desconocido
+                        max_det=8, # pacient, 5 roles, UCI, desconocido
+                        verbose=True)
