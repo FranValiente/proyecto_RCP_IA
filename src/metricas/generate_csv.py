@@ -23,8 +23,6 @@ results = model.predict(source=video_path,
 # print(result.boxes.conf)
 # result.names es un dict con la etiqueta que se le corresponde a cada clase {0: 'compresor1', 1: 'compresor2', 2: 'enfermeroT', 3: 'líder', 4: 'ventilador', 5: 'paciente', 6: 'UCI', 7: 'desconocido'}
 
-dict = {0: 'compresor1', 1: 'compresor2', 2: 'enfermeroT', 3: 'lider', 4: 'ventilador', 5: 'paciente', 6: 'UCI', 7: 'desconocido'}
-
 with open(csv_path+"\predictions_video_2.csv", "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(["frame", "clase", "confianza", "x1", "y1", "x2", "y2"])
