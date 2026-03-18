@@ -8,7 +8,7 @@ model = YOLO(weights)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.to(device)
 
-video_path = r'C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\2.mp4' # 2 12, testear 9 10 gineco
+video_path = r'C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\ya_entrenado\3.mp4' # 2 12, testear 9 10 gineco
 csv_path = r'C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos'
 
 print("Iniciando predict")
@@ -22,8 +22,8 @@ results = model.predict(source=video_path,
 # print(result.boxes.cls)
 # print(result.boxes.conf)
 # result.names es un dict con la etiqueta que se le corresponde a cada clase {0: 'compresor1', 1: 'compresor2', 2: 'enfermeroT', 3: 'líder', 4: 'ventilador', 5: 'paciente', 6: 'UCI', 7: 'desconocido'}
-
-with open(csv_path+"\predictions_video_2.csv", "w", newline="") as csvfile:
+dict = {0: 'compresor1', 1: 'compresor2', 2: 'enfermeroT', 3: 'líder', 4: 'ventilador', 5: 'paciente', 6: 'UCI', 7: 'desconocido'}
+with open(csv_path+"\predictions_video_3.csv", "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(["frame", "clase", "confianza", "x1", "y1", "x2", "y2"])
 

@@ -7,7 +7,7 @@ model = YOLO(weights)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model.to(device)
 
-path = r'C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\2.mp4' # 2 12, testear 9 10 gineco
+path = r'C:\Users\SimIA\Documents\proyecto_RCP_IA\data\videos\ya_entrenado\3.mp4' # 2 12, testear 9 10 gineco
 
 print("Iniciando predict")
 results = model.predict(source=path,
