@@ -1,11 +1,12 @@
 import csv
 from scipy.signal import find_peaks
 import numpy as np
-from scipy.fft import fft
+import pandas as pd
 
+# Global variables
 FPS = 30
 
-def get_all_lines(csv_path):
+def _get_all_lines(csv_path):
     """
     Lee un archivo CSV y devuelve todas sus filas como una lista de listas.
 
@@ -25,26 +26,9 @@ def get_all_lines(csv_path):
     return lines
 
 
-def picos_ventana(ventana):
-    señal = ventana  # lista de floats
+def compresor1_info(csv_path):
 
-    indices_picos, _  = find_peaks(señal)
-    indices_valles, _ = find_peaks([-x for x in señal])  # invertir para encontrar mínimos
-
-    picos  = [señal[i] for i in indices_picos]
-    valles = [señal[i] for i in indices_valles]
-
-    return {
-        "picos": picos,
-        "valles": valles,
-        "media_picos": sum(picos) / len(picos) if picos else None,
-        "media_valles": sum(valles) / len(valles) if valles else None,
-    }
-
-
-def profundidad_compresiones(csv_path):
-
-    frames = get_all_lines(csv_path)
+    frames = _get_all_lines(csv_path)
     best = {}  # {frame_id: (conf, height)}
     for frame in frames[1:]:
         if frame[1] == "compresor1":
@@ -54,7 +38,7 @@ def profundidad_compresiones(csv_path):
             y2 = float(frame[6])
             height = y2 - y1
             if num_frame not in best or conf > best[num_frame][0]:
-                best[num_frame] = (conf, height)
+                best[num_frame] = (conf, height) # Get the highest confidence compresor1 for each frame (if there´s more than one detected)
 
     max_frame = max(best.keys()) if best else -1
     heights = []
@@ -67,28 +51,41 @@ def profundidad_compresiones(csv_path):
             contadorNone += 1
     
     total_frames = (max_frame + 1)
-    pct_compresor1 = (total_frames - contadorNone)/total_frames * 100
+    pct_t_compresion = (total_frames - contadorNone)/total_frames * 100
 
-    # Partir heights en ventanas separadas por los valores vacíos
+
     ventanas = []
     ventana_actual = []
-    for h in heights:
+    inicio_ventana_actual = None
+    inicio_primera_ventana = None
+    # Partir heights en ventanas separadas por los valores vacíos
+    for i, h in enumerate(heights):
         if h is not None:
+            if not ventana_actual:  # primer frame de una nueva ventana
+                inicio_ventana_actual = i
             ventana_actual.append(h)
         else:
-            if ventana_actual and len(ventana_actual) >= 120: # evita añadir ventanas vacías si hay Nones consecutivos
+            if ventana_actual and len(ventana_actual) >= 120:
+                if inicio_primera_ventana is None:  # solo guardar la primera
+                    inicio_primera_ventana = inicio_ventana_actual
                 ventanas.append(ventana_actual)
                 ventana_actual = []
-    if ventana_actual and len(ventana_actual) >= 120: # última ventana si el vídeo termina con señal
+                inicio_ventana_actual = None
+
+    if ventana_actual and len(ventana_actual) >= 120:
+        if inicio_primera_ventana is None:
+            inicio_primera_ventana = inicio_ventana_actual
         ventanas.append(ventana_actual)
 
-    return {"alturas": heights, "pct_compresor1": round(pct_compresor1,2), "ventanas": ventanas}
+    return {"alturas": heights, "pct_t_compresion": round(pct_t_compresion,2), "ventanas": ventanas, 't2inicio_comp': round(inicio_primera_ventana/FPS, 2)}
 
-csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_3.csv"
+
+csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_12.csv"
 
 import matplotlib.pyplot as plt
-compresiones = profundidad_compresiones(csv_path)
-print(f"%t del compresor 1: {compresiones["pct_compresor1"]}%")
+compresiones = compresor1_info(csv_path)
+print(f"%t de tiempo con compresiones: {compresiones["pct_t_compresion"]}%")
+print(f"Tiempo hasta el inicio de las compresiones: {compresiones["t2inicio_comp"]} s")
 
 heights = compresiones["alturas"]
 
@@ -101,26 +98,47 @@ for ventana in compresiones["ventanas"]:
     ventana = np.array(ventana)
     ventana -= np.min(ventana)
 
-    indices_picos, _  = find_peaks(ventana, prominence=1.5)
-    indices_valles, _ = find_peaks([-x for x in ventana], prominence=1.5)  # invertir para encontrar mínimos
+    umbral = 1.5
+    media = np.mean(ventana)
+    std = np.std(ventana)
+    ventana_filtered = np.array([i for i in ventana if abs(i - media) < umbral * std])
+    # ventana_filtered = np.where(np.abs(ventana - media) < umbral * std, ventana, media)
 
-    duracion_segundos = len(ventana) / FPS
-    cpm_temporal = (len(indices_picos) / duracion_segundos) * 60
+    def calcular_metricas(señal, fps):
+        picos, _ = find_peaks(señal, prominence=2.5)
+        valles, _ = find_peaks([-x for x in señal], prominence=2.5)
+        
+        duracion = len(señal) / fps
+        cpm = (len(picos) / duracion) * 60 if duracion > 0 else 0
+        
+        diferencias = []
+        for p in picos:
+            if len(valles) > 0:
+                v_cercano = valles[np.argmin(np.abs(valles - p))]
+                diff = señal[p] - señal[v_cercano]
+                if diff <= 15: diferencias.append(diff) # Control extra para no tener en cuenta en el cálculo de la profundidad puntos con una diferencia excesiva
+                
+        profundidad = np.mean(diferencias) if diferencias else 0
+        return picos, valles, cpm, profundidad
 
-    diferencias = []
-    for idx_pico in indices_picos:
-        if len(indices_valles) == 0:
-            break
-        # Valle más cercano a este pico
-        idx_valle_cercano = indices_valles[np.argmin(np.abs(indices_valles - idx_pico))]
-        diff = ventana[idx_pico] - ventana[idx_valle_cercano]
-        if diff <= 30:  # descartar outliers
-            diferencias.append(diff)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=False)
+    plt.subplots_adjust(hspace=0.4)
 
-    profundidad_media = np.mean(diferencias) if diferencias else 0
+    # Señal Original
+    p1, v1, cpm1, depth1 = calcular_metricas(ventana, FPS)
+    ax1.plot(ventana, label=f'Original: {cpm1:.1f} cpm | {depth1:.1f} cm', color='blue', alpha=0.6)
+    ax1.plot(p1, ventana[p1], "x", color='red', label="picos")
+    ax1.plot(v1, ventana[v1], "x", color='green', label="valles")
+    ax1.set_title("Señal Original (Con ruido/outliers)")
+    ax1.legend(loc='upper right', fontsize='small')
 
-    plt.plot(ventana, label=f'Parámetros de las compresiones: f={cpm_temporal:.2f}; depth={profundidad_media:.2f}')
-    plt.plot(indices_picos,  ventana[indices_picos],  "x", label="picos")
-    plt.plot(indices_valles, ventana[indices_valles], "x", label="valles")
-    plt.legend()
+    # Señal Filtrada
+    p2, v2, cpm2, depth2 = calcular_metricas(ventana_filtered, FPS)
+    ax2.plot(ventana_filtered, label=f'Procesada: {cpm2:.1f}±10.0 cpm | {depth2:.1f}±1.0 cm', color='darkgreen')
+    ax2.plot(p2, ventana_filtered[p2], "x", color='red')
+    ax2.plot(v2, ventana_filtered[v2], "x", color='green')
+    ax2.set_title(f"Señal Filtrada (Umbral: {umbral}σ)")
+    ax2.legend(loc='upper right', fontsize='small')
+
     plt.show()
+#scipy.signal savgol_filter

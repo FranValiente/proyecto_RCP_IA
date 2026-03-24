@@ -9,6 +9,7 @@ dependencies = [
     "data>=0.4",
     "matplotlib>=3.10.8",
     "opencv-python>=4.13.0.90",
+    "pandas>=3.0.1",
     "pillow>=12.1.0",
     "pycocotools>=2.0.11",
     "torch>=2.9.1",
