@@ -57,35 +57,58 @@ def compresor1_info(csv_path):
     ventanas = []
     ventana_actual = []
     inicio_ventana_actual = None
-    inicio_primera_ventana = None
-    # Partir heights en ventanas separadas por los valores vacíos
+
     for i, h in enumerate(heights):
         if h is not None:
-            if not ventana_actual:  # primer frame de una nueva ventana
+            if not ventana_actual:
                 inicio_ventana_actual = i
             ventana_actual.append(h)
         else:
-            if ventana_actual and len(ventana_actual) >= 120:
-                if inicio_primera_ventana is None:  # solo guardar la primera
-                    inicio_primera_ventana = inicio_ventana_actual
-                ventanas.append(ventana_actual)
+            if ventana_actual:
+                ventanas.append({
+                    "alturas": ventana_actual,
+                    "frame_inicio": inicio_ventana_actual,
+                    "frame_fin": i - 1  # i es el primer None, el frame anterior es el fin
+                })
                 ventana_actual = []
                 inicio_ventana_actual = None
+    if ventana_actual:
+        ventanas.append({
+            "alturas": ventana_actual,
+            "frame_inicio": inicio_ventana_actual,
+            "frame_fin": len(heights) - 1
+        })
 
-    if ventana_actual and len(ventana_actual) >= 120:
-        if inicio_primera_ventana is None:
-            inicio_primera_ventana = inicio_ventana_actual
-        ventanas.append(ventana_actual)
+    GAP_MAXIMO = 15
 
-    return {"alturas": heights, "pct_t_compresion": round(pct_t_compresion,2), "ventanas": ventanas, 't2inicio_comp': round(inicio_primera_ventana/FPS, 2)}
+    ventanas_fusionadas = [ventanas[0]] if ventanas else []
+    for ventana in ventanas[1:]:
+        anterior = ventanas_fusionadas[-1]
+        gap = ventana["frame_inicio"] - anterior["frame_fin"]
+        if gap <= GAP_MAXIMO:
+            # Rellenar el gap con None y fusionar
+            gap_nones = [None] * gap
+            anterior["alturas"] = anterior["alturas"] + gap_nones + ventana["alturas"]
+            # anterior["alturas"] = anterior["alturas"] + ventana["alturas"]
+            anterior["frame_fin"] = ventana["frame_fin"]
+        else:
+            ventanas_fusionadas.append(ventana)
+
+    ventanas = ventanas_fusionadas
+
+    # Filtrar ventanas demasiado cortas (menos de N frames)
+    MIN_FRAMES = 5
+    ventanas = [v for v in ventanas if len(v["alturas"]) >= MIN_FRAMES]
+
+    inicio_primera_ventana = ventanas[0]['frame_inicio']/FPS
+
+    return {"alturas": heights, "pct_t_compresion": round(pct_t_compresion,2), "ventanas": ventanas, 't2inicio_comp': round(inicio_primera_ventana, 2)}
 
 
-csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_12.csv"
+csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_6.csv"
 
 import matplotlib.pyplot as plt
 compresiones = compresor1_info(csv_path)
-print(f"%t de tiempo con compresiones: {compresiones["pct_t_compresion"]}%")
-print(f"Tiempo hasta el inicio de las compresiones: {compresiones["t2inicio_comp"]} s")
 
 heights = compresiones["alturas"]
 
@@ -93,16 +116,25 @@ plt.plot(heights)
 plt.ylabel("Altura compresor1 (cm)")
 plt.xlabel("Frames")
 plt.show()
+print('='*60)
+print(f"Información temporal de la calidad de las compresiones:")
+print(f"%t de tiempo con compresiones: {compresiones["pct_t_compresion"]}%")
+print(f"Tiempo hasta el inicio de las compresiones: {compresiones["t2inicio_comp"]} s")
+print(f'Información temporal de la RCP')
 
-for ventana in compresiones["ventanas"]:
-    ventana = np.array(ventana)
+for window in compresiones["ventanas"]:
+    ventana = window['alturas']
+
+    ventana_interp = pd.Series(ventana).interpolate(method='linear').to_numpy()
+
+    ventana = np.array(ventana_interp, dtype=float)
     ventana -= np.min(ventana)
 
     umbral = 1.5
     media = np.mean(ventana)
     std = np.std(ventana)
-    ventana_filtered = np.array([i for i in ventana if abs(i - media) < umbral * std])
-    # ventana_filtered = np.where(np.abs(ventana - media) < umbral * std, ventana, media)
+    # ventana_filtered = np.array([i for i in ventana if abs(i - media) < umbral * std])
+    ventana_filtered = np.where(abs(ventana-media) < umbral * std, ventana, media)
 
     def calcular_metricas(señal, fps):
         picos, _ = find_peaks(señal, prominence=2.5)
@@ -125,15 +157,22 @@ for ventana in compresiones["ventanas"]:
     plt.subplots_adjust(hspace=0.4)
 
     # Señal Original
-    p1, v1, cpm1, depth1 = calcular_metricas(ventana, FPS)
+    p1, v1, cpm1, depth1 = calcular_metricas(ventana, FPS) # picos, valles, compresiones por minuto, profundidad compresiones
     ax1.plot(ventana, label=f'Original: {cpm1:.1f} cpm | {depth1:.1f} cm', color='blue', alpha=0.6)
     ax1.plot(p1, ventana[p1], "x", color='red', label="picos")
     ax1.plot(v1, ventana[v1], "x", color='green', label="valles")
     ax1.set_title("Señal Original (Con ruido/outliers)")
     ax1.legend(loc='upper right', fontsize='small')
 
-    # Señal Filtrada
+    # # Señal Filtrada
     p2, v2, cpm2, depth2 = calcular_metricas(ventana_filtered, FPS)
+
+    t_inicio = window['frame_inicio']/FPS # En segundos
+    t_fin = window['frame_fin']/FPS
+    minutos_inicio, segundos_inicio = divmod(t_inicio, 60)
+    minutos_fin, segundos_fin = divmod(t_fin, 60)
+
+    print(f"    Intervalo entre {int(minutos_inicio)}min:{segundos_inicio:.1f}s - {int(minutos_fin)}min:{segundos_fin:.1f}s: {cpm2:.1f}±10.0 cpm, {depth2:.1f}±1.0 cm")
     ax2.plot(ventana_filtered, label=f'Procesada: {cpm2:.1f}±10.0 cpm | {depth2:.1f}±1.0 cm', color='darkgreen')
     ax2.plot(p2, ventana_filtered[p2], "x", color='red')
     ax2.plot(v2, ventana_filtered[v2], "x", color='green')
