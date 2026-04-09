@@ -79,7 +79,6 @@ def compresor1_info(csv_path):
         })
 
     GAP_MAXIMO = 15
-
     ventanas_fusionadas = [ventanas[0]] if ventanas else []
     for ventana in ventanas[1:]:
         anterior = ventanas_fusionadas[-1]
@@ -136,110 +135,162 @@ def calcular_metricas_compresiones(signal, fps):
     return picos, valles, cpm, profundidad
 
 
-def t_asign_roles(csv_path):
+def _segmentar_rol(frames_rol, gap_maximo=15):
     """
-    Calcula el tiempo hasta la primera detección estable de cada rol,
-    definida como la primera vez que el rol aparece durante al menos
-    MIN_SEGUNDOS de forma continua (tolerando gaps de hasta GAP_MAXIMO frames).
+    Agrupa una lista ordenada de frames en segmentos continuos,
+    tolerando gaps de hasta gap_maximo frames entre detecciones.
 
     Returns:
-        dict {rol: tiempo_en_segundos} — None si el rol no alcanza el mínimo.
+        Lista de tuplas (seg_inicio, seg_fin).
     """
+    if not frames_rol:
+        return []
+
+    segmentos = []
+    seg_inicio = frames_rol[0]
+    seg_fin    = frames_rol[0]
+
+    for f in frames_rol[1:]:
+        if f - seg_fin <= gap_maximo:
+            seg_fin = f
+        else:
+            segmentos.append((seg_inicio, seg_fin))
+            seg_inicio = f
+            seg_fin    = f
+    segmentos.append((seg_inicio, seg_fin))
+
+    return segmentos
+
+
+def _primer_segmento_estable(segmentos, min_frames):
+    """
+    Devuelve el frame de inicio del primer segmento que cumple
+    la duración mínima, o None si ninguno la cumple.
+    """
+    for seg_inicio, seg_fin in segmentos:
+        if (seg_fin - seg_inicio + 1) >= min_frames:
+            return seg_inicio
+    return None
+
+
+def t_asign_roles(csv_path, min_segundos=3):
     ROLES = ["ventilador", "líder", "compresor2", "enfermeroT"]
-    MIN_SEGUNDOS = 3
-    MIN_FRAMES = MIN_SEGUNDOS * FPS   # 87 frames a 29fps
+    MIN_FRAMES = min_segundos * FPS
     GAP_MAXIMO = 15
 
     frames = _get_all_lines(csv_path)
-
-    # Recoger todos los frames en que aparece cada rol
     apariciones = {rol: set() for rol in ROLES}
     for frame in frames[1:]:
-        clase = frame[1]
-        if clase in apariciones:
-            apariciones[clase].add(int(frame[0]))
+        if frame[1] in apariciones:
+            apariciones[frame[1]].add(int(frame[0]))
 
     t2rol = {}
-
     for rol in ROLES:
         frames_rol = sorted(apariciones[rol])
-
-        if not frames_rol:
-            t2rol[rol] = None
-            continue
-
-        # Agrupar en segmentos continuos tolerando gaps <= GAP_MAXIMO
-        segmentos = []
-        seg_inicio = frames_rol[0]
-        seg_fin    = frames_rol[0]
-
-        for f in frames_rol[1:]:
-            if f - seg_fin <= GAP_MAXIMO:
-                seg_fin = f          # el gap se absorbe, el segmento continúa
-            else:
-                segmentos.append((seg_inicio, seg_fin))
-                seg_inicio = f
-                seg_fin    = f
-        segmentos.append((seg_inicio, seg_fin))  # último segmento
-
-        # Primer segmento cuya duración en frames supera el mínimo
-        primera_asignacion = None
-        for seg_inicio, seg_fin in segmentos:
-            if (seg_fin - seg_inicio + 1) >= MIN_FRAMES:
-                primera_asignacion = seg_inicio
-                break
-
-        t2rol[rol] = round(primera_asignacion / FPS, 2) if primera_asignacion is not None else None
+        segmentos  = _segmentar_rol(frames_rol, GAP_MAXIMO)
+        frame_asig = _primer_segmento_estable(segmentos, MIN_FRAMES)
+        t2rol[rol] = round(frame_asig / FPS, 2) if frame_asig is not None else None
 
     return t2rol
 
-csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_7.csv"
+
+def pct_t_roles(csv_path, min_segundos=3): # Tras asignación
+    ROLES = ["compresor1", "ventilador", "líder", "compresor2", "enfermeroT"]
+    MIN_FRAMES = min_segundos * FPS
+    GAP_MAXIMO = 15
+
+    frames = _get_all_lines(csv_path)
+    apariciones = {rol: set() for rol in ROLES}
+    max_frame_video = 0
+
+    for frame in frames[1:]:
+        num_frame = int(frame[0])
+        max_frame_video = max(max_frame_video, num_frame)
+        if frame[1] in apariciones:
+            apariciones[frame[1]].add(num_frame)
+
+    pct_roles = {}
+    for rol in ROLES:
+        frames_rol = sorted(apariciones[rol])
+        segmentos  = _segmentar_rol(frames_rol, GAP_MAXIMO)
+        frame_asig = _primer_segmento_estable(segmentos, MIN_FRAMES)
+
+        if frame_asig is None:
+            pct_roles[rol] = None
+            continue
+
+        frames_tras_asig = sum(1 for f in frames_rol if f >= frame_asig)
+        total_tras_asig  = max_frame_video - frame_asig + 1
+        pct_roles[rol]   = round((frames_tras_asig / total_tras_asig) * 100, 2)
+
+    return pct_roles
+
+
+csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_6.csv"
+compresiones = compresor1_info(csv_path)
+heights = compresiones["alturas"]
 t2rol = t_asign_roles(csv_path)
+pct_roles = pct_t_roles(csv_path)
 
-print(t2rol)
+min_t2ventilador, seg_t2ventilador = divmod(t2rol['ventilador'], 60)
+min_t2lider, seg_t2lider = divmod(t2rol['líder'], 60)
+min_t2compresor2, seg_t2compresor2 = divmod(t2rol['compresor2'], 60)
+min_t2enfermeroT, seg_t2enfermeroT = divmod(t2rol['enfermeroT'], 60)
+min_t2compresor1, seg_t2compresor1 = divmod(compresiones["t2inicio_comp"], 60)
 
-# import matplotlib.pyplot as plt
-# compresiones = compresor1_info(csv_path)
+import matplotlib.pyplot as plt
 
-# heights = compresiones["alturas"]
+plt.plot(heights)
+plt.ylabel("Altura compresor1 (cm)")
+plt.xlabel("Frames")
+plt.show()
+print('='*60)
+print(f"Tiempos hasta la asignación de los roles:")
+print(f"    -Tiempo hasta asignación del compresor1: {int(min_t2compresor1)}min:{seg_t2compresor1:.1f}s")
+print(f"    -Tiempo hasta asignación del ventilador: {int(min_t2ventilador)}min:{seg_t2ventilador:.1f}s")
+print(f"    -Tiempo hasta asignación del líder: {int(min_t2lider)}min:{seg_t2lider:.1f}s")
+print(f"    -Tiempo hasta asignación del compresor2: {int(min_t2compresor2)}min:{seg_t2compresor2:.1f}s")
+print(f"    -Tiempo hasta asignación del enfermeroT: {int(min_t2enfermeroT)}min:{seg_t2enfermeroT:.1f}s")
+print('='*60)
+print(f"Porcentaje de tiempo que ha estado en su rol (una vez se ha establecido):")
+print(f"    -Compresor1: {pct_roles["compresor1"]}%")
+print(f"    -Ventilador: {pct_roles["ventilador"]}%")
+print(f"    -Líder: {pct_roles["líder"]}%")
+print(f"    -Compresor2: {pct_roles["compresor2"]}%")
+print(f"    -EnfermeroT: {pct_roles["enfermeroT"]}%")
+print('='*60)
+print(f"Información temporal de la calidad de las compresiones:")
+print(f"El paciente ha estado un {compresiones["pct_t_compresion"]}% del vídeo recibiendo compresiones")
+print(f"Tiempo hasta el inicio de las compresiones: {int(min_t2compresor1)}min:{seg_t2compresor1:.1f}s")
+print(f'Información sobre cada intervalo de compresiones continuadas:')
+for window in compresiones["ventanas"]:
+    ventana_filtered = window["alturas_filtradas"]
+    # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=False)
+    # plt.subplots_adjust(hspace=0.4)
 
-# plt.plot(heights)
-# plt.ylabel("Altura compresor1 (cm)")
-# plt.xlabel("Frames")
-# plt.show()
-# print('='*60)
-# print(f"Información temporal de la calidad de las compresiones:")
-# print(f"El paciente ha estado un {compresiones["pct_t_compresion"]}% del vídeo recibiendo compresiones")
-# print(f"Tiempo hasta el inicio de las compresiones: {compresiones["t2inicio_comp"]} s")
-# print(f'Información sobre cada intervalo de compresiones continuadas:')
+    # # signal Original
+    # p1, v1, cpm1, depth1 = calcular_metricas(ventana, FPS) # picos, valles, compresiones por minuto, profundidad compresiones
+    # ax1.plot(ventana, label=f'Original: {cpm1:.1f} cpm | {depth1:.1f} cm', color='blue', alpha=0.6)
+    # ax1.plot(p1, ventana[p1], "x", color='red', label="picos")
+    # ax1.plot(v1, ventana[v1], "x", color='green', label="valles")
+    # ax1.set_title("signal Original (Con ruido/outliers)")
+    # ax1.legend(loc='upper right', fontsize='small')
 
-# for window in compresiones["ventanas"]:
-#     ventana_filtered = window["alturas_filtradas"]
-#     # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=False)
-#     # plt.subplots_adjust(hspace=0.4)
+    # # signal Filtrada
+    p2, v2, cpm2, depth2 = calcular_metricas_compresiones(ventana_filtered, FPS)
 
-#     # # signal Original
-#     # p1, v1, cpm1, depth1 = calcular_metricas(ventana, FPS) # picos, valles, compresiones por minuto, profundidad compresiones
-#     # ax1.plot(ventana, label=f'Original: {cpm1:.1f} cpm | {depth1:.1f} cm', color='blue', alpha=0.6)
-#     # ax1.plot(p1, ventana[p1], "x", color='red', label="picos")
-#     # ax1.plot(v1, ventana[v1], "x", color='green', label="valles")
-#     # ax1.set_title("signal Original (Con ruido/outliers)")
-#     # ax1.legend(loc='upper right', fontsize='small')
+    t_inicio = window['frame_inicio']/FPS # En segundos
+    t_fin = window['frame_fin']/FPS
+    minutos_inicio, segundos_inicio = divmod(t_inicio, 60)
+    minutos_fin, segundos_fin = divmod(t_fin, 60)
 
-#     # # signal Filtrada
-#     p2, v2, cpm2, depth2 = calcular_metricas_compresiones(ventana_filtered, FPS)
+    print(f"    -Compresiones realizadas entre {int(minutos_inicio)}min:{segundos_inicio:.1f}s - {int(minutos_fin)}min:{segundos_fin:.1f}s: frecuencia={cpm2:.1f}±10.0 cpm; profundidad={depth2:.1f}±1.0 cm")
+    # ax2.plot(ventana_filtered, label=f'Procesada: {cpm2:.1f}±10.0 cpm | {depth2:.1f}±1.0 cm', color='darkgreen')
+    # ax2.plot(p2, ventana_filtered[p2], "x", color='red')
+    # ax2.plot(v2, ventana_filtered[v2], "x", color='green')
+    # ax2.set_title(f"signal Filtrada (Umbral: {umbral}σ)")
+    # ax2.legend(loc='upper right', fontsize='small')
 
-#     t_inicio = window['frame_inicio']/FPS # En segundos
-#     t_fin = window['frame_fin']/FPS
-#     minutos_inicio, segundos_inicio = divmod(t_inicio, 60)
-#     minutos_fin, segundos_fin = divmod(t_fin, 60)
-
-#     print(f"    Intervalo entre {int(minutos_inicio)}min:{segundos_inicio:.1f}s - {int(minutos_fin)}min:{segundos_fin:.1f}s: {cpm2:.1f}±10.0 cpm, {depth2:.1f}±1.0 cm")
-#     # ax2.plot(ventana_filtered, label=f'Procesada: {cpm2:.1f}±10.0 cpm | {depth2:.1f}±1.0 cm', color='darkgreen')
-#     # ax2.plot(p2, ventana_filtered[p2], "x", color='red')
-#     # ax2.plot(v2, ventana_filtered[v2], "x", color='green')
-#     # ax2.set_title(f"signal Filtrada (Umbral: {umbral}σ)")
-#     # ax2.legend(loc='upper right', fontsize='small')
-
-#     # plt.show()
+    # plt.show()
+print('='*60)
 # #scipy.signal savgol_filter
