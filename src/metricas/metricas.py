@@ -131,7 +131,7 @@ def calcular_metricas_compresiones(signal, fps):
             diff = signal[p] - signal[v_cercano]
             if diff <= 15: diferencias.append(diff) # Control extra para no tener en cuenta en el cálculo de la profundidad puntos con una diferencia excesiva
             
-    profundidad = np.mean(diferencias)-1 if diferencias else 0
+    profundidad = np.mean(diferencias) if diferencias else 0
     return picos, valles, cpm, profundidad
 
 
@@ -226,71 +226,73 @@ def pct_t_roles(csv_path, min_segundos=3): # Tras asignación
     return pct_roles
 
 
-csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_6.csv"
-compresiones = compresor1_info(csv_path)
-heights = compresiones["alturas"]
-t2rol = t_asign_roles(csv_path)
-pct_roles = pct_t_roles(csv_path)
+# csv_path = r"C:\Users\SimIA\Documents\proyecto_RCP_IA\src\metricas\predicciones_videos\predictions_video_5.csv"
+# compresiones = compresor1_info(csv_path)
+# heights = compresiones["alturas"]
+# t2rol = t_asign_roles(csv_path)
+# pct_roles = pct_t_roles(csv_path)
 
-min_t2ventilador, seg_t2ventilador = divmod(t2rol['ventilador'], 60)
-min_t2lider, seg_t2lider = divmod(t2rol['líder'], 60)
-min_t2compresor2, seg_t2compresor2 = divmod(t2rol['compresor2'], 60)
-min_t2enfermeroT, seg_t2enfermeroT = divmod(t2rol['enfermeroT'], 60)
-min_t2compresor1, seg_t2compresor1 = divmod(compresiones["t2inicio_comp"], 60)
+# # En el pipeline completo, aquí iría la generación del informe con los parámetros obtenidos anteriormente
 
-import matplotlib.pyplot as plt
+# min_t2ventilador, seg_t2ventilador = divmod(t2rol['ventilador'], 60)
+# min_t2lider, seg_t2lider = divmod(t2rol['líder'], 60)
+# min_t2compresor2, seg_t2compresor2 = divmod(t2rol['compresor2'], 60)
+# min_t2enfermeroT, seg_t2enfermeroT = divmod(t2rol['enfermeroT'], 60)
+# min_t2compresor1, seg_t2compresor1 = divmod(compresiones["t2inicio_comp"], 60)
 
-plt.plot(heights)
-plt.ylabel("Altura compresor1 (cm)")
-plt.xlabel("Frames")
-plt.show()
-print('='*60)
-print(f"Tiempos hasta la asignación de los roles:")
-print(f"    -Tiempo hasta asignación del compresor1: {int(min_t2compresor1)}min:{seg_t2compresor1:.1f}s")
-print(f"    -Tiempo hasta asignación del ventilador: {int(min_t2ventilador)}min:{seg_t2ventilador:.1f}s")
-print(f"    -Tiempo hasta asignación del líder: {int(min_t2lider)}min:{seg_t2lider:.1f}s")
-print(f"    -Tiempo hasta asignación del compresor2: {int(min_t2compresor2)}min:{seg_t2compresor2:.1f}s")
-print(f"    -Tiempo hasta asignación del enfermeroT: {int(min_t2enfermeroT)}min:{seg_t2enfermeroT:.1f}s")
-print('='*60)
-print(f"Porcentaje de tiempo que ha estado en su rol (una vez se ha establecido):")
-print(f"    -Compresor1: {pct_roles["compresor1"]}%")
-print(f"    -Ventilador: {pct_roles["ventilador"]}%")
-print(f"    -Líder: {pct_roles["líder"]}%")
-print(f"    -Compresor2: {pct_roles["compresor2"]}%")
-print(f"    -EnfermeroT: {pct_roles["enfermeroT"]}%")
-print('='*60)
-print(f"Información temporal de la calidad de las compresiones:")
-print(f"El paciente ha estado un {compresiones["pct_t_compresion"]}% del vídeo recibiendo compresiones")
-print(f"Tiempo hasta el inicio de las compresiones: {int(min_t2compresor1)}min:{seg_t2compresor1:.1f}s")
-print(f'Información sobre cada intervalo de compresiones continuadas:')
-for window in compresiones["ventanas"]:
-    ventana_filtered = window["alturas_filtradas"]
-    # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=False)
-    # plt.subplots_adjust(hspace=0.4)
+# import matplotlib.pyplot as plt
 
-    # # signal Original
-    # p1, v1, cpm1, depth1 = calcular_metricas(ventana, FPS) # picos, valles, compresiones por minuto, profundidad compresiones
-    # ax1.plot(ventana, label=f'Original: {cpm1:.1f} cpm | {depth1:.1f} cm', color='blue', alpha=0.6)
-    # ax1.plot(p1, ventana[p1], "x", color='red', label="picos")
-    # ax1.plot(v1, ventana[v1], "x", color='green', label="valles")
-    # ax1.set_title("signal Original (Con ruido/outliers)")
-    # ax1.legend(loc='upper right', fontsize='small')
+# plt.plot(heights)
+# plt.ylabel("Altura compresor1 (cm)")
+# plt.xlabel("Frames")
+# plt.show()
+# print('='*60)
+# print(f"Tiempos hasta la asignación de los roles:")
+# print(f"    -Tiempo hasta asignación del compresor1: {int(min_t2compresor1)}min:{seg_t2compresor1:.1f}s")
+# print(f"    -Tiempo hasta asignación del ventilador: {int(min_t2ventilador)}min:{seg_t2ventilador:.1f}s")
+# print(f"    -Tiempo hasta asignación del líder: {int(min_t2lider)}min:{seg_t2lider:.1f}s")
+# print(f"    -Tiempo hasta asignación del compresor2: {int(min_t2compresor2)}min:{seg_t2compresor2:.1f}s")
+# print(f"    -Tiempo hasta asignación del enfermeroT: {int(min_t2enfermeroT)}min:{seg_t2enfermeroT:.1f}s")
+# print('='*60)
+# print(f"Porcentaje de tiempo que ha estado en su rol (una vez se ha establecido el rol):")
+# print(f"    -Compresor1: {pct_roles["compresor1"]}%")
+# print(f"    -Ventilador: {pct_roles["ventilador"]}%")
+# print(f"    -Líder: {pct_roles["líder"]}%")
+# print(f"    -Compresor2: {pct_roles["compresor2"]}%")
+# print(f"    -EnfermeroT: {pct_roles["enfermeroT"]}%")
+# print('='*60)
+# print(f"Información temporal de la calidad de las compresiones:")
+# print(f"El paciente ha estado un {compresiones["pct_t_compresion"]}% del vídeo recibiendo compresiones")
+# print(f"Tiempo hasta el inicio de las compresiones: {int(min_t2compresor1)}min:{seg_t2compresor1:.1f}s")
+# print(f'Información sobre cada intervalo de compresiones continuadas:')
+# for window in compresiones["ventanas"]:
+#     ventana_filtered = window["alturas_filtradas"]
+#     # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=False)
+#     # plt.subplots_adjust(hspace=0.4)
 
-    # # signal Filtrada
-    p2, v2, cpm2, depth2 = calcular_metricas_compresiones(ventana_filtered, FPS)
+#     # # signal Original
+#     # p1, v1, cpm1, depth1 = calcular_metricas(ventana, FPS) # picos, valles, compresiones por minuto, profundidad compresiones
+#     # ax1.plot(ventana, label=f'Original: {cpm1:.1f} cpm | {depth1:.1f} cm', color='blue', alpha=0.6)
+#     # ax1.plot(p1, ventana[p1], "x", color='red', label="picos")
+#     # ax1.plot(v1, ventana[v1], "x", color='green', label="valles")
+#     # ax1.set_title("signal Original (Con ruido/outliers)")
+#     # ax1.legend(loc='upper right', fontsize='small')
 
-    t_inicio = window['frame_inicio']/FPS # En segundos
-    t_fin = window['frame_fin']/FPS
-    minutos_inicio, segundos_inicio = divmod(t_inicio, 60)
-    minutos_fin, segundos_fin = divmod(t_fin, 60)
+#     # # signal Filtrada
+#     p2, v2, cpm2, depth2 = calcular_metricas_compresiones(ventana_filtered, FPS)
 
-    print(f"    -Compresiones realizadas entre {int(minutos_inicio)}min:{segundos_inicio:.1f}s - {int(minutos_fin)}min:{segundos_fin:.1f}s: frecuencia={cpm2:.1f}±10.0 cpm; profundidad={depth2:.1f}±1.0 cm")
-    # ax2.plot(ventana_filtered, label=f'Procesada: {cpm2:.1f}±10.0 cpm | {depth2:.1f}±1.0 cm', color='darkgreen')
-    # ax2.plot(p2, ventana_filtered[p2], "x", color='red')
-    # ax2.plot(v2, ventana_filtered[v2], "x", color='green')
-    # ax2.set_title(f"signal Filtrada (Umbral: {umbral}σ)")
-    # ax2.legend(loc='upper right', fontsize='small')
+#     t_inicio = window['frame_inicio']/FPS # En segundos
+#     t_fin = window['frame_fin']/FPS
+#     minutos_inicio, segundos_inicio = divmod(t_inicio, 60)
+#     minutos_fin, segundos_fin = divmod(t_fin, 60)
 
-    # plt.show()
-print('='*60)
-# #scipy.signal savgol_filter
+#     print(f"    -Compresiones realizadas entre {int(minutos_inicio)}min:{segundos_inicio:.1f}s - {int(minutos_fin)}min:{segundos_fin:.1f}s: frecuencia={cpm2:.1f}±10.0 cpm; profundidad={depth2:.1f}±1.0 cm")
+#     # ax2.plot(ventana_filtered, label=f'Procesada: {cpm2:.1f}±10.0 cpm | {depth2:.1f}±1.0 cm', color='darkgreen')
+#     # ax2.plot(p2, ventana_filtered[p2], "x", color='red')
+#     # ax2.plot(v2, ventana_filtered[v2], "x", color='green')
+#     # ax2.set_title(f"signal Filtrada (Umbral: {umbral}σ)")
+#     # ax2.legend(loc='upper right', fontsize='small')
+
+#     # plt.show()
+# print('='*60)
+# # #scipy.signal savgol_filter

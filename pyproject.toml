@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "cython>=3.2.4",
     "data>=0.4",
+    "fpdf2>=2.8.7",
     "matplotlib>=3.10.8",
     "opencv-python>=4.13.0.90",
     "pandas>=3.0.1",
